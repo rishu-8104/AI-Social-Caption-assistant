@@ -18,17 +18,12 @@ The **AI-Powered Social Media Image Captioning App** is a smart tool designed to
 5. **Copy & Share** – Copy the caption and post it directly to your social media.  
 
 ## 🖥️ Tech Stack  
-- **Frontend:** React.js / Vue.js (for UI simulation)  
-- **Backend:** Node.js / Python (AI-based caption generation)  
-- **AI Model:** OpenAI GPT / Custom Image Captioning Model  
-- **Styling:** Tailwind CSS / Bootstrap  
-- **Deployment:** AWS / Firebase  
+- **Frontend:** Next.js
+- **Backend:** Node.js
+- **AI Model:** Gemini 1.5 flash
+- **Styling:** Tailwind CSS 
+- **Deployment:** vercel  
 
-## 🔧 Installation & Setup  
-1. Clone the repository:  
-   ```bash
-   git clone https://github.com/your-repo/ai-captioning-app.git
-   cd ai-captioning-app
 
 ## 📌 Future Enhancements
 🔹 Support for TikTok & YouTube Shorts
