@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 262.1 83.3% 57.8%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 262.1 83.3% 57.8%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 262.1 83.3% 57.8%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 262.1 83.3% 57.8%;
+}
+
+body {
+  @apply bg-background text-foreground;
+}
+
+/* Custom animation for floating icons */
+@keyframes float-random {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-15px) translateX(15px) rotate(5deg);
+  }
+  50% {
+    transform: translateY(0) translateX(30px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(15px) translateX(15px) rotate(-5deg);
+  }
+}
+
+.animate-float {
+  animation: float-random 15s ease-in-out infinite; /* Reduced from 30s to 15s */
+}
+
+/* Focus styles for better accessibility */
+*:focus-visible {
+  @apply outline-none ring-2 ring-purple-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900;
+}
+
+/* High contrast focus styles for keyboard navigation */
+.keyboard-focus *:focus {
+  @apply outline-2 outline-offset-2 outline-purple-600 dark:outline-purple-400;
+}
+
+/* Skip link styles */
+.sr-only:focus {
+  @apply not-sr-only fixed top-4 left-4 z-50 p-4 bg-white text-black dark:bg-slate-900 dark:text-white rounded-md shadow-lg;
+}
+
+/* Improve animation performance */
+.animate-float,
+.animate-float-alt {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Ensure sufficient color contrast for accessibility */
+.text-slate-300 {
+  @apply dark:text-slate-100; /* Increased contrast from slate-200 to slate-100 */
+}
+
+.text-muted-foreground {
+  @apply dark:text-slate-200; /* Increased contrast from slate-300 to slate-200 */
+}
+
+/* Add high contrast text classes */
+.high-contrast-text {
+  @apply text-slate-900 dark:text-white;
+}
+
+.high-contrast-text-secondary {
+  @apply text-slate-800 dark:text-slate-100;
+}
+
+.text-purple-600 {
+  @apply dark:text-purple-300; /* Better contrast in dark mode */
+}
+
+.text-blue-600 {
+  @apply dark:text-blue-300; /* Better contrast in dark mode */
+}
+
+.text-pink-600 {
+  @apply dark:text-pink-300; /* Better contrast in dark mode */
+}
+

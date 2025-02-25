@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram">
+  <rect width="20" height="20" x="2" y="2" rx="5" ry="5" fill="url(#instagram-gradient)"/>
+  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="white"/>
+  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" stroke="white"/>
+  <defs>
+    <linearGradient id="instagram-gradient" x1="1.5" y1="1.5" x2="22.5" y2="22.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFDC80"/>
+      <stop offset="10%" stop-color="#FCAF45"/>
+      <stop offset="50%" stop-color="#F77737"/>
+      <stop offset="75%" stop-color="#D62976"/>
+      <stop offset="100%" stop-color="#962FBF"/>
+    </linearGradient>
+  </defs>
+</svg>
+
