@@ -29,6 +29,9 @@ import {
   UploadIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { SocialAuthButton } from "./social-auth-button"
+import { useSocialAuth } from "@/hooks/use-social-auth"
+import { postToSocialMedia, uploadImageToPublicUrl } from "@/lib/social-auth"
 
 // Add a type for the platform data
 interface PlatformData {
@@ -51,7 +54,9 @@ export function ImageUploader() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState<string>("")
   const [lastSelectedPlatform, setLastSelectedPlatform] = useState<string>("")
+  const [posting, setPosting] = useState<Record<string, boolean>>({})
   const { toast } = useToast()
+  const { isAuthenticated, authData } = useSocialAuth()
   const resultsRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -233,6 +238,85 @@ export function ImageUploader() {
     })
   }
 
+  // Handle posting to social media
+  const handlePost = async (platform: string) => {
+    if (!image) {
+      toast({
+        variant: "destructive",
+        title: "No image",
+        description: "Please upload an image first.",
+      })
+      return
+    }
+
+    const caption = captions.find(c => c.platform.toLowerCase() === platform.toLowerCase())
+    if (!caption) {
+      toast({
+        variant: "destructive",
+        title: "No caption",
+        description: "Generate a caption first before posting.",
+      })
+      return
+    }
+
+    const platformKey = platform.toLowerCase() as 'instagram' | 'facebook'
+    if (!isAuthenticated(platformKey)) {
+      toast({
+        variant: "destructive",
+        title: "Not authenticated",
+        description: `Please connect to ${platform} first.`,
+      })
+      return
+    }
+
+    setPosting(prev => ({ ...prev, [platform]: true }))
+
+    try {
+      // For demo purposes, we'll skip actual image upload to external service
+      // In production, you'd upload the image to a public URL first
+      let imageUrl: string | undefined
+
+      if (image) {
+        try {
+          // This would typically upload to your cloud storage
+          imageUrl = await uploadImageToPublicUrl(image)
+        } catch (error) {
+          console.warn('Image upload failed, posting without image:', error)
+        }
+      }
+
+      const authInfo = authData[platformKey]
+      if (!authInfo) {
+        throw new Error('Authentication data not found')
+      }
+
+      const result = await postToSocialMedia({
+        platform: platformKey,
+        caption: caption.text,
+        imageUrl: imageUrl,
+        accessToken: authInfo.accessToken,
+        userId: authInfo.userId,
+      })
+
+      if (result.success) {
+        toast({
+          title: "Posted successfully!",
+          description: `Your post has been shared on ${platform}.`,
+        })
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Posting failed",
+        description: error instanceof Error ? error.message : `Failed to post to ${platform}`,
+      })
+    } finally {
+      setPosting(prev => ({ ...prev, [platform]: false }))
+    }
+  }
+
   // Get the platform icon with appropriate color and accessibility attributes
   const getPlatformIcon = (platform: string) => {
     const platformData = platforms.find((p) => p.name.toLowerCase() === platform.toLowerCase())
@@ -243,10 +327,10 @@ export function ImageUploader() {
   }
 
   return (
-    <div className="space-y-8">
-      <Card className="p-6 w-[400px] mx-auto bg-gradient-to-br from-purple-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 border-2 border-purple-200 dark:border-slate-700 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] transform">
-        <div className="flex flex-col items-center gap-4">
-          <h2 className="text-xl font-bold text-center animate-pulse bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+    <div className="space-y-6 sm:space-y-8">
+      <Card className="p-4 sm:p-6 w-full max-w-2xl mx-auto bg-gradient-to-br from-purple-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 border-2 border-purple-200 dark:border-slate-700 transition-all duration-300 hover:shadow-xl hover:scale-[1.01] transform">
+        <div className="flex flex-col items-center gap-4 sm:gap-6">
+          <h2 className="text-lg sm:text-xl font-bold text-center animate-pulse bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
             Social Media Caption Generator
           </h2>
           <div
@@ -275,23 +359,23 @@ export function ImageUploader() {
                 fill
                 className="object-cover rounded-lg"
                 priority
-                sizes="(max-width: 400px) 100vw, 400px"
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 80vw, 600px"
               />
             ) : (
-              <div className="flex flex-col items-center gap-2 text-muted-foreground p-8 text-center">
+              <div className="flex flex-col items-center gap-2 text-muted-foreground p-6 sm:p-8 text-center">
                 <UploadIcon
-                  className="w-8 h-8 text-purple-500 dark:text-purple-400 animate-bounce"
+                  className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500 dark:text-purple-400 animate-bounce"
                   aria-hidden="true"
                 />
-                <p className="text-purple-700 dark:text-purple-300 animate-pulse">
+                <p className="text-sm sm:text-base text-purple-700 dark:text-purple-300 animate-pulse">
                   Click here or drag and drop your image
                 </p>
-                <p className="text-sm text-purple-600 dark:text-purple-400">Supports: JPG, PNG, GIF</p>
+                <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400">Supports: JPG, PNG, GIF</p>
               </div>
             )}
           </div>
           <div className="w-full space-y-2">
-            <Label htmlFor="context" className="text-purple-800 dark:text-purple-200">
+            <Label htmlFor="context" className="text-sm sm:text-base text-purple-800 dark:text-purple-200">
               Image Context (optional)
             </Label>
             <Textarea
@@ -299,19 +383,20 @@ export function ImageUploader() {
               placeholder="Add details about your image to improve caption generation..."
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              className="resize-none border-purple-200 dark:border-slate-700 focus:border-purple-400"
+              className="resize-none border-purple-200 dark:border-slate-700 focus:border-purple-400 text-sm sm:text-base"
               aria-describedby="context-description"
+              rows={3}
             />
             <p id="context-description" className="text-xs text-purple-800 dark:text-purple-200">
               Providing context helps the AI generate more relevant captions
             </p>
           </div>
-          <div className="w-full space-y-2">
+          <div className="w-full space-y-3">
             <fieldset>
-              <legend className="text-purple-800 dark:text-purple-200 mb-2">
+              <legend className="text-sm sm:text-base text-purple-800 dark:text-purple-200 mb-3">
                 Select platforms for caption generation
               </legend>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {platforms.map((platform) => (
                   <div key={platform.name} className="flex items-center space-x-2">
                     <input
@@ -332,6 +417,17 @@ export function ImageUploader() {
                 ))}
               </div>
             </fieldset>
+
+            {/* Social Media Authentication Section */}
+            <div className="space-y-2">
+              <p className="text-sm text-purple-800 dark:text-purple-200">
+                Connect accounts to post directly:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <SocialAuthButton platform="instagram" />
+                <SocialAuthButton platform="facebook" />
+              </div>
+            </div>
           </div>
           <input
             type="file"
@@ -346,7 +442,7 @@ export function ImageUploader() {
             <Button
               onClick={generateCaptions}
               disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:from-purple-700 hover:via-pink-600 hover:to-blue-700 text-white transition-all duration-300 hover:scale-105 transform"
+              className="w-full bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:from-purple-700 hover:via-pink-600 hover:to-blue-700 text-white transition-all duration-300 hover:scale-105 transform text-sm sm:text-base"
               aria-busy={loading}
             >
               {loading ? (
@@ -364,26 +460,26 @@ export function ImageUploader() {
 
       {loading && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           role="alert"
           aria-live="assertive"
         >
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-8 shadow-2xl max-w-md w-full flex flex-col items-center gap-4 animate-bounce-slow">
-            <div className="relative w-20 h-20" aria-hidden="true">
-              <div className="absolute inset-0 rounded-full border-8 border-t-purple-600 border-r-pink-500 border-b-blue-500 border-l-green-500 animate-spin"></div>
-              <div className="absolute inset-2 rounded-full border-8 border-t-blue-500 border-r-green-500 border-b-purple-600 border-l-pink-500 animate-spin-slow"></div>
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 sm:p-8 shadow-2xl max-w-md w-full flex flex-col items-center gap-4 animate-bounce-slow">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20" aria-hidden="true">
+              <div className="absolute inset-0 rounded-full border-6 sm:border-8 border-t-purple-600 border-r-pink-500 border-b-blue-500 border-l-green-500 animate-spin"></div>
+              <div className="absolute inset-2 rounded-full border-6 sm:border-8 border-t-blue-500 border-r-green-500 border-b-purple-600 border-l-pink-500 animate-spin-slow"></div>
             </div>
-            <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 bg-clip-text text-transparent animate-pulse">
+            <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 bg-clip-text text-transparent animate-pulse">
               Generating Captions
             </h3>
-            <p className="text-center text-slate-600 dark:text-slate-300">
+            <p className="text-center text-sm sm:text-base text-slate-600 dark:text-slate-300">
               Our AI is analyzing your image and crafting the perfect captions for your selected platforms...
             </p>
             <div className="flex gap-2 mt-2" aria-hidden="true">
               {selectedPlatforms.map((platform) => {
                 const PlatformIcon = platforms.find((p) => p.name === platform)?.icon || Instagram
                 const color = platforms.find((p) => p.name === platform)?.color || "text-pink-600"
-                return <PlatformIcon key={platform} className={`h-6 w-6 ${color} animate-pulse`} />
+                return <PlatformIcon key={platform} className={`h-5 w-5 sm:h-6 sm:w-6 ${color} animate-pulse`} />
               })}
             </div>
           </div>
@@ -392,52 +488,56 @@ export function ImageUploader() {
 
       {captions.length > 0 && (
         <div ref={resultsRef} tabIndex={-1}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-3xl mx-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-4xl mx-auto px-2 sm:px-4">
             <TabsList
-              className={`grid w-full p-1 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 dark:from-slate-800 dark:via-slate-700 dark:to-slate-700 transition-all duration-300 hover:shadow-md ${captions.length > 3 ? "grid-cols-4" : `grid-cols-${captions.length}`}`}
+              className={`grid w-full p-1 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 dark:from-slate-800 dark:via-slate-700 dark:to-slate-700 transition-all duration-300 hover:shadow-md ${captions.length === 1 ? "grid-cols-1" : captions.length === 2 ? "grid-cols-2" : captions.length === 3 ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4"}`}
               aria-label="Social media platforms"
             >
               {captions.some((c) => c.platform === "Instagram") && (
                 <TabsTrigger
                   value="instagram"
-                  className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
+                  className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 text-xs sm:text-sm"
                 >
                   {getPlatformIcon("Instagram")}
-                  <span>Instagram</span>
+                  <span className="hidden xs:inline sm:inline">Instagram</span>
+                  <span className="xs:hidden">IG</span>
                 </TabsTrigger>
               )}
               {captions.some((c) => c.platform === "Twitter") && (
                 <TabsTrigger
                   value="twitter"
-                  className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
+                  className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 text-xs sm:text-sm"
                 >
                   {getPlatformIcon("Twitter")}
-                  <span>Twitter</span>
+                  <span className="hidden xs:inline sm:inline">Twitter</span>
+                  <span className="xs:hidden">X</span>
                 </TabsTrigger>
               )}
               {captions.some((c) => c.platform === "Facebook") && (
                 <TabsTrigger
                   value="facebook"
-                  className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
+                  className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 text-xs sm:text-sm"
                 >
                   {getPlatformIcon("Facebook")}
-                  <span>Facebook</span>
+                  <span className="hidden xs:inline sm:inline">Facebook</span>
+                  <span className="xs:hidden">FB</span>
                 </TabsTrigger>
               )}
               {captions.some((c) => c.platform === "LinkedIn") && (
                 <TabsTrigger
                   value="linkedin"
-                  className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900"
+                  className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 text-xs sm:text-sm"
                 >
                   {getPlatformIcon("LinkedIn")}
-                  <span>LinkedIn</span>
+                  <span className="hidden xs:inline sm:inline">LinkedIn</span>
+                  <span className="xs:hidden">LI</span>
                 </TabsTrigger>
               )}
             </TabsList>
 
             {captions.some((c) => c.platform === "Instagram") && (
               <TabsContent value="instagram">
-                <Card className="w-full max-w-md mx-auto border-2 border-purple-200 dark:border-slate-700 overflow-hidden">
+                <Card className="w-full max-w-sm sm:max-w-md mx-auto border-2 border-purple-200 dark:border-slate-700 overflow-hidden">
                   <div className="p-3 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-slate-900 dark:to-slate-800">
                     <div className="flex items-center gap-2">
                       <Avatar className="w-8 h-8 border-2 border-pink-200">
@@ -523,7 +623,7 @@ export function ImageUploader() {
 
             {captions.some((c) => c.platform === "Twitter") && (
               <TabsContent value="twitter">
-                <Card className="w-full max-w-md mx-auto border-2 border-blue-200 dark:border-slate-700">
+                <Card className="w-full max-w-sm sm:max-w-md mx-auto border-2 border-blue-200 dark:border-slate-700">
                   <div className="p-4 space-y-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-slate-900 dark:to-slate-800">
                     <div className="flex items-center gap-3">
                       <Avatar className="w-10 h-10 border-2 border-blue-200">
@@ -602,7 +702,7 @@ export function ImageUploader() {
 
             {captions.some((c) => c.platform === "Facebook") && (
               <TabsContent value="facebook">
-                <Card className="w-full max-w-md mx-auto border-2 border-blue-200 dark:border-slate-700">
+                <Card className="w-full max-w-sm sm:max-w-md mx-auto border-2 border-blue-200 dark:border-slate-700">
                   <div className="p-4 space-y-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -678,7 +778,7 @@ export function ImageUploader() {
 
             {captions.some((c) => c.platform === "LinkedIn") && (
               <TabsContent value="linkedin">
-                <Card className="w-full max-w-md mx-auto border-2 border-blue-200 dark:border-slate-700">
+                <Card className="w-full max-w-sm sm:max-w-md mx-auto border-2 border-blue-200 dark:border-slate-700">
                   <div className="p-4 space-y-4 bg-gradient-to-r from-blue-50 to-sky-50 dark:from-slate-900 dark:to-slate-800">
                     <div className="flex items-start gap-3">
                       <Avatar className="w-12 h-12 border-2 border-blue-200">
@@ -750,19 +850,43 @@ export function ImageUploader() {
               </TabsContent>
             )}
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center sm:justify-end">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() =>
                   copyToClipboard(captions.find((c) => c.platform.toLowerCase() === activeTab)?.text || "")
                 }
-                className="bg-gradient-to-r from-purple-100 to-blue-100 hover:from-purple-200 hover:to-blue-200 border-purple-300 text-purple-800 dark:bg-gradient-to-r dark:from-slate-800 dark:to-slate-700 dark:border-slate-600 dark:text-purple-300 transition-all duration-300 hover:scale-105 transform"
+                className="bg-gradient-to-r from-purple-100 to-blue-100 hover:from-purple-200 hover:to-blue-200 border-purple-300 text-purple-800 dark:bg-gradient-to-r dark:from-slate-800 dark:to-slate-700 dark:border-slate-600 dark:text-purple-300 transition-all duration-300 hover:scale-105 transform text-sm"
                 aria-label="Copy caption to clipboard"
               >
                 <CopyIcon className="h-4 w-4 mr-2 animate-spin-slow" aria-hidden="true" />
                 <span>Copy Caption</span>
               </Button>
+
+              {/* Show post button only for Instagram and Facebook */}
+              {(activeTab === 'instagram' || activeTab === 'facebook') && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handlePost(activeTab)}
+                  disabled={posting[activeTab] || !isAuthenticated(activeTab as 'instagram' | 'facebook')}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white transition-all duration-300 hover:scale-105 transform text-sm"
+                  aria-label={`Post to ${activeTab}`}
+                >
+                  {posting[activeTab] ? (
+                    <>
+                      <LoaderIcon className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                      <span>Posting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" aria-hidden="true" />
+                      <span>Post to {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </Tabs>
         </div>

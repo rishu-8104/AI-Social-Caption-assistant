@@ -2,12 +2,12 @@
 module.exports = {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
-    "*.{js,ts,jsx,tsx,mdx}",
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
+  prefix: "",
   theme: {
     container: {
       center: true,
@@ -17,15 +17,13 @@ module.exports = {
       },
     },
     extend: {
-      animation: {
-        "spin-slow": "spin 2s linear infinite", // Faster from 3s to 2s
-        "bounce-slow": "bounce 2s ease-in-out infinite", // Faster from 3s to 2s
-        "fade-in": "fadeIn 1s ease-in-out", // Faster from 1.5s to 1s
-        float: "float 15s ease-in-out infinite", // Faster from 30s to 15s
-        "float-alt": "float-alt 12s ease-in-out infinite", // Faster from 25s to 12s
-        "pulse-slow": "pulse 3s ease-in-out infinite", // Faster from 4s to 3s
-        wiggle: "wiggle 1.5s ease-in-out infinite", // Faster from 2s to 1.5s
-        zoom: "zoom 10s ease-in-out infinite", // Faster from 20s to 10s
+      screens: {
+        'xs': '475px',
+        // sm: '640px', (default)
+        // md: '768px', (default)
+        // lg: '1024px', (default)
+        // xl: '1280px', (default)
+        // 2xl: '1536px', (default)
       },
       colors: {
         border: "hsl(var(--border))",
@@ -69,40 +67,46 @@ module.exports = {
       },
       keyframes: {
         "accordion-down": {
-          from: { height: 0 },
+          from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
           from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: 0 },
+          to: { height: "0" },
         },
-        fadeIn: {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" },
+        "bounce-slow": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
         },
-        float: {
-          "0%": { transform: "translateY(0px) rotate(0deg) scale(1)" },
-          "25%": { transform: "translateY(-20px) rotate(10deg) scale(1.05)" },
-          "50%": { transform: "translateY(0px) rotate(0deg) scale(1)" },
-          "75%": { transform: "translateY(20px) rotate(-10deg) scale(0.95)" },
-          "100%": { transform: "translateY(0px) rotate(0deg) scale(1)" },
+        "spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "float": {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "25%": { transform: "translateY(-10px) rotate(2deg)" },
+          "50%": { transform: "translateY(0) rotate(0deg)" },
+          "75%": { transform: "translateY(10px) rotate(-2deg)" },
         },
         "float-alt": {
-          "0%": { transform: "translateX(0px) translateY(0px) rotate(0deg)" },
-          "20%": { transform: "translateX(15px) translateY(-10px) rotate(5deg)" },
-          "40%": { transform: "translateX(30px) translateY(0px) rotate(0deg)" },
-          "60%": { transform: "translateX(15px) translateY(10px) rotate(-5deg)" },
-          "80%": { transform: "translateX(0px) translateY(0px) rotate(0deg)" },
-          "100%": { transform: "translateX(0px) translateY(0px) rotate(0deg)" },
+          "0%, 100%": { transform: "translateX(0) rotate(0deg)" },
+          "25%": { transform: "translateX(10px) rotate(-2deg)" },
+          "50%": { transform: "translateX(0) rotate(0deg)" },
+          "75%": { transform: "translateX(-10px) rotate(2deg)" },
         },
-        wiggle: {
-          "0%, 100%": { transform: "rotate(-3deg)" },
-          "50%": { transform: "rotate(3deg)" },
-        },
-        zoom: {
-          "0%, 100%": { transform: "scale(1)" },
-          "50%": { transform: "scale(1.1)" },
-        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "bounce-slow": "bounce-slow 2s ease-in-out infinite",
+        "spin-slow": "spin-slow 3s linear infinite",
+        "fade-in": "fade-in 0.8s ease-out forwards",
+        "float": "float 6s ease-in-out infinite",
+        "float-alt": "float-alt 8s ease-in-out infinite",
       },
     },
   },

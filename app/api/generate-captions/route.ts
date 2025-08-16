@@ -1,97 +1,127 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import { NextRequest, NextResponse } from 'next/server'
 
-// Initialize the Google Generative AI client
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_API_KEY!)
+// Initialize the Google AI client
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '')
 
-// Set a longer timeout for Vercel serverless functions
-export const maxDuration = 60 // 60 seconds timeout
+// Platform-specific configuration
+const platformConfig = {
+  Instagram: {
+    tone: 'casual and trendy',
+    length: '1-2 sentences with 8-15 hashtags',
+    emojis: 'encouraged',
+    sample: 'Amazing sunset! 🌅 #sunset #photography #nature #beautiful'
+  },
+  Twitter: {
+    tone: 'concise and engaging',
+    length: 'under 240 characters with 2-3 hashtags',
+    emojis: 'minimal',
+    sample: 'Beautiful sunset tonight! 🌅 #sunset #nature'
+  },
+  Facebook: {
+    tone: 'conversational and storytelling',
+    length: 'longer form, ask questions to engage',
+    emojis: 'moderate',
+    sample: 'What an incredible sunset! There\'s something magical about...'
+  },
+  LinkedIn: {
+    tone: 'professional and insightful',
+    length: 'thought leadership style with 2-3 professional hashtags',
+    emojis: 'minimal or none',
+    sample: 'Taking time to appreciate nature can enhance creativity and productivity. #leadership #mindfulness'
+  }
+}
 
-// Enable streaming for better performance
-export const dynamic = "force-dynamic"
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { image, context, platforms = ["Instagram", "Twitter", "Facebook", "LinkedIn"] } = await request.json()
-
-    // Validate input
-    if (!image) {
-      return Response.json({ error: "Image is required" }, { status: 400 })
+    // Validate API key
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Google AI API key is not configured' },
+        { status: 500 }
+      )
     }
 
-    if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
-      return Response.json({ error: "At least one platform must be selected" }, { status: 400 })
+    // Parse request body
+    const { image, context, platforms } = await request.json()
+
+    // Validate required fields
+    if (!image) {
+      return NextResponse.json(
+        { error: 'Image is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!platforms || platforms.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one platform must be selected' },
+        { status: 400 }
+      )
+    }
+
+    // Validate image format
+    if (!image.startsWith('data:image/')) {
+      return NextResponse.json(
+        { error: 'Invalid image format' },
+        { status: 400 }
+      )
     }
 
     // Extract base64 image data
-    const base64Image = image.split(",")[1]
+    const base64Image = image.split(',')[1]
     if (!base64Image) {
-      return Response.json({ error: "Invalid image format" }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Invalid image format' },
+        { status: 400 }
+      )
     }
 
-    // Initialize the model with a more efficient configuration
+    // Initialize the model
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
-      systemInstruction: "You are a social media content expert specializing in creating engaging captions.",
     })
 
-    const contextPrompt = context ? `Additional context about the image: ${context}` : "No additional context provided."
+    const contextPrompt = context
+      ? `Additional context about the image: ${context}`
+      : "No additional context provided."
 
-    // Create a dynamic prompt based on selected platforms
-    const platformsToGenerate = platforms.map((p) => p.toLowerCase()).join(", ")
+    // Build platform-specific guidelines
+    const platformGuidelines = platforms.map((platform: string) => {
+      const config = platformConfig[platform as keyof typeof platformConfig]
+      if (!config) return ''
 
-    const prompt = `Analyze the image and the provided context to create platform-specific captions.
+      return `${platform}:
+- Tone: ${config.tone}
+- Length: ${config.length}
+- Emoji usage: ${config.emojis}
+- Example: ${config.sample}`
+    }).join('\n\n')
+
+    const prompt = `You are a social media content expert. Analyze this image and create engaging captions for the specified platforms.
 
 ${contextPrompt}
 
-IMPORTANT: Generate captions ONLY for these platforms: ${platformsToGenerate}.
-Respond ONLY with a valid JSON object in exactly this format, no other text:
+Generate captions for these platforms: ${platforms.join(', ')}
 
+Platform Guidelines:
+${platformGuidelines}
+
+Return ONLY a valid JSON object in this exact format:
 {
-${
-  platforms.includes("Instagram")
-    ? `"instagram": {
-  "caption": "Your engaging Instagram caption here",
-  "hashtags": ["relevant", "hashtags", "here"]
-},`
-    : ""
-}
-${
-  platforms.includes("Facebook")
-    ? `"facebook": {
-  "caption": "Your Facebook caption here"
-},`
-    : ""
-}
-${
-  platforms.includes("LinkedIn")
-    ? `"linkedin": {
-  "caption": "Your LinkedIn caption here"
-},`
-    : ""
-}
-${
-  platforms.includes("Twitter")
-    ? `"twitter": {
-  "caption": "Your Twitter caption here"
-}`
-    : ""
-}
+  "captions": [
+    {"platform": "Instagram", "text": "Your complete caption with hashtags"},
+    {"platform": "Twitter", "text": "Your tweet with hashtags"}
+  ]
 }
 
-Guidelines for each platform:
-${platforms.includes("Instagram") ? "- Instagram: Casual, trendy tone with relevant hashtags" : ""}
-${platforms.includes("Facebook") ? "- Facebook: Conversational and engaging, can be longer" : ""}
-${platforms.includes("LinkedIn") ? "- LinkedIn: Professional and business-focused" : ""}
-${platforms.includes("Twitter") ? "- Twitter: Concise, within 280 characters" : ""}
+Important: Return only the JSON object, no markdown or additional text.`
 
-Do not include any markdown, formatting, or additional text outside the JSON structure.`
-
-    // Set a timeout for the API call
+    // Generate content with timeout
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Request timeout")), 55000) // 55 seconds timeout
+      setTimeout(() => reject(new Error("Request timeout")), 55000)
     })
 
-    // Create the API call promise
     const apiCallPromise = model.generateContent([
       prompt,
       {
@@ -102,12 +132,11 @@ Do not include any markdown, formatting, or additional text outside the JSON str
       },
     ])
 
-    // Race the API call against the timeout
-    const result = (await Promise.race([apiCallPromise, timeoutPromise])) as any
+    const result = await Promise.race([apiCallPromise, timeoutPromise]) as any
     const response = await result.response
     let text = response.text()
 
-    // Clean up the response to ensure valid JSON
+    // Clean up response
     text = text.trim()
     if (text.startsWith("```json")) {
       text = text.replace(/```json\n?/, "").replace(/```$/, "")
@@ -115,64 +144,37 @@ Do not include any markdown, formatting, or additional text outside the JSON str
       text = text.replace(/```\n?/, "").replace(/```$/, "")
     }
 
+    // Parse and validate response
+    let parsedResponse
     try {
-      const parsedResponse = JSON.parse(text)
-
-      // Create captions array only for selected platforms
-      const captions = []
-
-      if (platforms.includes("Instagram") && parsedResponse.instagram?.caption) {
-        const hashtags = Array.isArray(parsedResponse.instagram.hashtags) ? parsedResponse.instagram.hashtags : []
-        captions.push({
-          platform: "Instagram",
-          text: `${parsedResponse.instagram.caption}
-
-${hashtags.map((tag) => `#${tag}`).join(" ")}`,
-        })
-      }
-
-      if (platforms.includes("Facebook") && parsedResponse.facebook?.caption) {
-        captions.push({
-          platform: "Facebook",
-          text: parsedResponse.facebook.caption,
-        })
-      }
-
-      if (platforms.includes("LinkedIn") && parsedResponse.linkedin?.caption) {
-        captions.push({
-          platform: "LinkedIn",
-          text: parsedResponse.linkedin.caption,
-        })
-      }
-
-      if (platforms.includes("Twitter") && parsedResponse.twitter?.caption) {
-        captions.push({
-          platform: "Twitter",
-          text: parsedResponse.twitter.caption,
-        })
-      }
-
-      // Return the captions with cache control headers for Vercel
-      return new Response(JSON.stringify({ captions }), {
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store, max-age=0",
-        },
-      })
-    } catch (parseError) {
-      console.error("Error parsing JSON:", parseError, "\nResponse text:", text)
-
-      // Fallback response with error message in captions
-      const captions = platforms.map((platform) => ({
-        platform,
-        text: "Unable to generate caption. Please try again.",
-      }))
-
-      return Response.json({ captions })
+      parsedResponse = JSON.parse(text)
+    } catch (error) {
+      throw new Error('Invalid JSON response from AI')
     }
+
+    // Validate response structure
+    if (!parsedResponse.captions || !Array.isArray(parsedResponse.captions)) {
+      throw new Error('Invalid response structure')
+    }
+
+    // Filter captions for requested platforms only
+    const captions = parsedResponse.captions.filter((caption: any) =>
+      platforms.includes(caption.platform) && caption.text
+    )
+
+    if (captions.length === 0) {
+      throw new Error('No valid captions generated')
+    }
+
+    return NextResponse.json({ captions })
+
   } catch (error) {
-    console.error("Error generating captions:", error)
-    return Response.json({ error: "Failed to generate captions" }, { status: 500 })
+    console.error('Error generating captions:', error)
+
+    return NextResponse.json(
+      { error: 'Failed to generate captions' },
+      { status: 500 }
+    )
   }
 }
 

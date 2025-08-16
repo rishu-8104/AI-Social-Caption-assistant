@@ -27,19 +27,19 @@ export default function Home() {
 
   return (
     <main
-      className="min-h-screen p-4 md:p-8 lg:p-12 bg-slate-900 relative overflow-hidden"
+      className="min-h-screen px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-12 lg:py-12 bg-slate-900 relative overflow-hidden"
       role="main"
       aria-labelledby="main-heading"
     >
-      {/* Animated floating social media icons - reduced quantity for better performance */}
+      {/* Animated floating social media icons - responsive quantity */}
       <div
         className="absolute inset-0 overflow-hidden opacity-10 pointer-events-none"
         aria-hidden="true" // Hide from screen readers as this is decorative
       >
-        {Array.from({ length: 40 }).map((_, i) => {
+        {Array.from({ length: 30 }).map((_, i) => {
           const randomIcon = socialIcons[Math.floor(Math.random() * socialIcons.length)]
           const Icon = randomIcon.icon
-          const size = 24 + Math.random() * 36
+          const size = 20 + Math.random() * 32
           const left = `${Math.random() * 100}%`
           const top = `${Math.random() * 100}%`
           const animationDuration = 15 + Math.random() * 45
@@ -66,19 +66,19 @@ export default function Home() {
         })}
       </div>
 
-      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
-        <div className="space-y-2 text-center relative overflow-hidden p-6 rounded-xl">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 md:space-y-10 relative z-10">
+        <div className="space-y-3 sm:space-y-4 text-center relative overflow-hidden p-4 sm:p-6 rounded-xl">
           <div
             className="absolute inset-0 bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-blue-900/50 opacity-70 animate-pulse"
             aria-hidden="true"
           ></div>
           <h1
             id="main-heading"
-            className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl relative animate-bounce-slow bg-gradient-to-r from-purple-400 via-pink-300 to-blue-400 bg-clip-text text-transparent"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tighter relative animate-bounce-slow bg-gradient-to-r from-purple-400 via-pink-300 to-blue-400 bg-clip-text text-transparent"
           >
             Social Media Caption Generator
           </h1>
-          <p className="text-slate-300 relative animate-fade-in">
+          <p className="text-sm sm:text-base md:text-lg text-slate-300 relative animate-fade-in max-w-2xl mx-auto">
             Upload an image and get AI-generated captions for different social media platforms
           </p>
         </div>
